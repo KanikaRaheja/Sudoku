@@ -35,7 +35,7 @@ class SplashScreenPageState extends State<SplashScreenPage> {
       useLoader: true,
       loaderColor: Styles.primaryColor,
       loadingText: const Text(
-        'VarunS2002',
+        'Sudoku v1',
         style: TextStyle(color: Colors.grey),
       ),
       loadingTextPadding: const EdgeInsets.only(top: 10.0),

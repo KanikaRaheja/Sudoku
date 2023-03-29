@@ -15,12 +15,17 @@ class AlertNumbersState extends StatefulWidget {
   static set number(int number) {
     AlertNumbers.number = number;
   }
+
+  static set color(Color pickColor) {
+    AlertNumbers.col = pickColor;
+  }
 }
 
 class AlertNumbers extends State<AlertNumbersState> {
   // ignore: avoid_init_to_null
   static int number = null;
-   int numberSelected;
+  static Color col = Colors.white;
+  int numberSelected;
   static final List<int> numberList1 = [1, 2, 3];
   static final List<int> numberList2 = [4, 5, 6];
   static final List<int> numberList3 = [7, 8, 9];
@@ -34,6 +39,7 @@ class AlertNumbers extends State<AlertNumbersState> {
           child: TextButton(
             onPressed: () => {
               setState(() {
+                col = Color.fromARGB(255, 80, 12, 34);
                 numberSelected = numbers;
                 number = numberSelected;
                 Navigator.pop(context);

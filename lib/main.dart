@@ -8,8 +8,6 @@ import 'package:flutter_animated_dialog/flutter_animated_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sudoku_solver_generator/sudoku_solver_generator.dart';
 
-import 'alerts/about.dart';
-import 'alerts/accent_colors.dart';
 import 'alerts/all.dart';
 import 'board_style.dart';
 import 'splash_screen_page.dart';
@@ -49,6 +47,63 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
+  int seconds = 0, minutes = 0, hours = 0;
+  String digitSecond = "00", digitMinutes = "00", digitHours = "00";
+
+  Timer timer;
+  bool started = false;
+
+  //Now 3 functions have been defined stop/reset/start for the functionality of Timer
+
+  void stop() {
+    timer.cancel();
+    setState(() {
+      started = false;
+    });
+  }
+
+  void reset() {
+    timer.cancel();
+    setState(() {
+      started = false;
+      seconds = 0;
+      minutes = 0;
+      hours = 0;
+      digitSecond = "00";
+      digitMinutes = "00";
+      digitHours = "00";
+    });
+  }
+
+  void start() {
+    started = true;
+    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      int localSeconds = seconds + 1;
+      int localMinutes = minutes;
+      int localHours = hours;
+
+      if (localSeconds > 59) {
+        if (localMinutes > 59) {
+          localHours += 1;
+          localMinutes = 0;
+        } else {
+          localMinutes += 1;
+          localSeconds = 0;
+        }
+      }
+
+      setState(() {
+        seconds = localSeconds;
+        minutes = localMinutes;
+        hours = localHours;
+        digitSecond = (seconds >= 10) ? "$seconds" : "0$seconds";
+        digitHours = (hours >= 10) ? "$hours" : "0$hours";
+        digitMinutes = (minutes >= 10) ? "$minutes" : "0$minutes";
+      });
+    });
+  }
+
+  bool clicked = false;
   bool firstRun = true;
   bool gameOver = false;
   int timesCalled = 0;
@@ -76,10 +131,11 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    start();
     try {
       doWhenWindowReady(() {
-        appWindow.alignment = Alignment.center;
-        appWindow.minSize = const Size(625, 625);
+        appWindow.alignment = Alignment.bottomCenter;
+        appWindow.minSize = const Size(625, 300);
       });
       // ignore: empty_catches
     } on UnimplementedError {}
@@ -262,6 +318,7 @@ class HomePageState extends State<HomePage> {
 
   void showSolution() {
     setState(() {
+      stop();
       game = copyGrid(gameSolved);
       isButtonDisabled = isButtonDisabled ? isButtonDisabled : isButtonDisabled;
       gameOver = true;
@@ -270,6 +327,8 @@ class HomePageState extends State<HomePage> {
 
   void newGame([String difficulty = 'easy']) {
     setState(() {
+      reset();
+      start();
       isFABDisabled = isFABDisabled;
     });
     Future.delayed(const Duration(milliseconds: 200), () {
@@ -285,6 +344,8 @@ class HomePageState extends State<HomePage> {
 
   void restartGame() {
     setState(() {
+      reset();
+      start();
       game = copyGrid(gameCopy);
       isButtonDisabled =
           isButtonDisabled ? !isButtonDisabled : isButtonDisabled;
@@ -309,6 +370,7 @@ class HomePageState extends State<HomePage> {
           onPressed: isButtonDisabled || gameCopy[k][i] != 0
               ? null
               : () {
+                  clicked = true;
                   showAnimatedDialog<void>(
                           animationType: DialogTransitionType.fade,
                           barrierDismissible: true,
@@ -318,14 +380,27 @@ class HomePageState extends State<HomePage> {
                       .whenComplete(() {
                     callback([k, i], AlertNumbersState.number);
                     AlertNumbersState.number = null;
+                    // AlertNumbers.col;
+                    // AlertNumbersState.color = null;
+                  });
+                  setState(() {
+                    print(k);
+                    print(i);
+                    clicked
+                        ? buttonColor(
+                            k,
+                            i,
+                          )
+                        : emptyColor(gameOver);
+                    print(clicked);
+                    // clicked = false;
                   });
                 },
           onLongPress: isButtonDisabled || gameCopy[k][i] != 0
               ? null
               : () => callback([k, i], 0),
           style: ButtonStyle(
-            backgroundColor:
-                MaterialStateProperty.all<Color>(buttonColor(k, i)),
+            backgroundColor:  MaterialStateProperty.all<Color>(buttonColor(k, i,)),
             foregroundColor: MaterialStateProperty.resolveWith<Color>(
                 (Set<MaterialState> states) {
               if (states.contains(MaterialState.disabled)) {
@@ -334,7 +409,10 @@ class HomePageState extends State<HomePage> {
                     : Styles.foregroundColor;
               }
               return game[k][i] == 0
-                  ? buttonColor(k, i)
+                  ? buttonColor(
+                      k,
+                      i,
+                    )
                   : Styles.secondaryColor;
             }),
             shape: MaterialStateProperty.all<OutlinedBorder>(
@@ -374,7 +452,7 @@ class HomePageState extends State<HomePage> {
     return rowList;
   }
 
-  void callback(List<int> index, int number) {
+  bool callback(List<int> index, int number) {
     setState(() {
       if (number == null) {
         return;
@@ -386,137 +464,6 @@ class HomePageState extends State<HomePage> {
       }
     });
   }
-
-  // showOptionModalSheet(BuildContext context) {
-  //   BuildContext outerContext = context;
-  //   showModalBottomSheet(
-  //       context: context,
-  //       isScrollControlled: true,
-  //       backgroundColor: Styles.secondaryBackgroundColor,
-  //       shape: const RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.vertical(
-  //           top: Radius.circular(10),
-  //         ),
-  //       ),
-  //       builder: (context) {
-  //         final TextStyle customStyle =
-  //             TextStyle(inherit: false, color: Styles.foregroundColor);
-  //         return Wrap(
-  //           children: [
-  //             ListTile(
-  //               leading: Icon(Icons.refresh, color: Styles.foregroundColor),
-  //               title: Text('Restart Game', style: customStyle),
-  //               // onTap: () {
-  //               //   Navigator.pop(context);
-  //               //   Timer(const Duration(milliseconds: 200), () => restartGame());
-  //               // },
-  //             ),
-  //             ListTile(
-  //               leading: Icon(Icons.add_rounded, color: Styles.foregroundColor),
-  //               title: Text('New Game', style: customStyle),
-  //               onTap: () {
-  //                 Navigator.pop(context);
-  //                 Timer(const Duration(milliseconds: 200),
-  //                     () => newGame(currentDifficultyLevel));
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading: Icon(Icons.lightbulb_outline_rounded,
-  //                   color: Styles.foregroundColor),
-  //               title: Text('Show Solution', style: customStyle),
-  //               onTap: () {
-  //                 Navigator.pop(context);
-  //                 Timer(
-  //                     const Duration(milliseconds: 200), () => showSolution());
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading:
-  //                   Icon(Icons.build_outlined, color: Styles.foregroundColor),
-  //               title: Text('Set Difficulty', style: customStyle),
-  //               onTap: () {
-  //                 Navigator.pop(context);
-  //                 Timer(
-  //                     const Duration(milliseconds: 300),
-  //                     () => showAnimatedDialog<void>(
-  //                             animationType: DialogTransitionType.fadeScale,
-  //                             barrierDismissible: true,
-  //                             duration: const Duration(milliseconds: 350),
-  //                             context: outerContext,
-  //                             builder: (_) => AlertDifficultyState(
-  //                                 currentDifficultyLevel)).whenComplete(() {
-  //                           if (AlertDifficultyState.difficulty != null) {
-  //                             Timer(const Duration(milliseconds: 300), () {
-  //                               newGame(
-  //                                   AlertDifficultyState.difficulty ?? 'test');
-  //                               currentDifficultyLevel =
-  //                                   AlertDifficultyState.difficulty;
-  //                               AlertDifficultyState.difficulty = null;
-  //                               setPrefs('currentDifficultyLevel');
-  //                             });
-  //                           }
-  //                         }));
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading: Icon(Icons.invert_colors_on_rounded,
-  //                   color: Styles.foregroundColor),
-  //               title: Text('Switch Theme', style: customStyle),
-  //               onTap: () {
-  //                 Navigator.pop(context);
-  //                 Timer(const Duration(milliseconds: 200), () {
-  //                   changeTheme('switch');
-  //                 });
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading: Icon(Icons.color_lens_outlined,
-  //                   color: Styles.foregroundColor),
-  //               title: Text('Change Accent Color', style: customStyle),
-  //               onTap: () {
-  //                 Navigator.pop(context);
-  //                 Timer(
-  //                     const Duration(milliseconds: 200),
-  //                     () => showAnimatedDialog<void>(
-  //                             animationType: DialogTransitionType.fadeScale,
-  //                             barrierDismissible: true,
-  //                             duration: const Duration(milliseconds: 350),
-  //                             context: outerContext,
-  //                             builder: (_) => AlertAccentColorsState(
-  //                                 currentAccentColor)).whenComplete(() {
-  //                           if (AlertAccentColorsState.accentColor != null) {
-  //                             Timer(const Duration(milliseconds: 300), () {
-  //                               currentAccentColor =
-  //                                   AlertAccentColorsState.accentColor;
-  //                               changeAccentColor(
-  //                                   currentAccentColor.toString());
-  //                               AlertAccentColorsState.accentColor = null;
-  //                               setPrefs('currentAccentColor');
-  //                             });
-  //                           }
-  //                         }));
-  //               },
-  //             ),
-  //             ListTile(
-  //               leading: Icon(Icons.info_outline_rounded,
-  //                   color: Styles.foregroundColor),
-  //               title: Text('About', style: customStyle),
-  //               onTap: () {
-  //                 Navigator.pop(context);
-  //                 Timer(
-  //                     const Duration(milliseconds: 200),
-  //                     () => showAnimatedDialog<void>(
-  //                         animationType: DialogTransitionType.fadeScale,
-  //                         barrierDismissible: true,
-  //                         duration: const Duration(milliseconds: 350),
-  //                         context: outerContext,
-  //                         builder: (_) => const AlertAbout()));
-  //               },
-  //             ),
-  //           ],
-  //         );
-  //       });
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -578,10 +525,82 @@ class HomePageState extends State<HomePage> {
               child: Stack(
                 children: [
                   Positioned(
-                    top:70,
+                      left: 120,
+                      top: 20,
+                      // width:40,
+                      height: 40,
+                      child: Row(
+                        children: [
+                          Text(
+                            "$digitHours : $digitMinutes : $digitSecond",
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromARGB(255, 196, 50, 40),
+                            ),
+                          ),
+                        ],
+                      )),
+                  Positioned(
+                    top: 70,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: createRows(),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 190,
+                    // left: 10,
+                    child: Row(
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            showAnimatedDialog<void>(
+                                    animationType: DialogTransitionType.fade,
+                                    barrierDismissible: true,
+                                    duration: const Duration(milliseconds: 300),
+                                    context: context,
+                                    builder: (_) => const AlertNumbersState())
+                                .whenComplete(() {
+                              callback([1, 1], AlertNumbersState.number);
+                              AlertNumbersState.number = null;
+                            });
+                          },
+                          child: textItem(1),
+                        ),
+                        TextButton(
+                          child: textItem(2),
+                        ),
+                        TextButton(
+                          child: textItem(3),
+                        ),
+                        TextButton(
+                          child: textItem(4),
+                        ),
+                        TextButton(
+                          child: textItem(5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 100,
+                    left: 30,
+                    child: Row(
+                      children: [
+                        TextButton(
+                          child: textItem(6),
+                        ),
+                        TextButton(
+                          child: textItem(7),
+                        ),
+                        TextButton(
+                          child: textItem(8),
+                        ),
+                        TextButton(
+                          child: textItem(9),
+                        ),
+                      ],
                     ),
                   ),
                   Positioned(
@@ -665,18 +684,26 @@ class HomePageState extends State<HomePage> {
               ),
             );
           }),
-          // floatingActionButton: FloatingActionButton(
-          //   foregroundColor: Styles.primaryBackgroundColor,
-          //   backgroundColor: isFABDisabled
-          //       ? Styles.primaryColor[900]
-          //       : Styles.primaryColor,
-          //   onPressed: isFABDisabled
-          //       ? () {
-          //           showOptionModalSheet(context);
-          //         }
-          //       : null,
-          //   child: const Icon(Icons.menu_rounded),
-          // )
         ));
   }
+
+  Widget textItem(int number) {
+    return Container(
+      height: 60,
+      width: 60,
+      child: Container(
+          decoration: BoxDecoration(
+              color: Color.fromARGB(29, 230, 140, 140),
+              borderRadius: BorderRadius.all(Radius.circular(10.0))),
+          child: new Center(
+            child: new Text(
+              "$number",
+              style: TextStyle(fontSize: 22, color: Colors.black),
+              textAlign: TextAlign.center,
+            ),
+          )),
+    );
+  }
+
+  Widget Inkwell() {}
 }
